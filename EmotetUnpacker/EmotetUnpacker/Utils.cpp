@@ -1,5 +1,13 @@
 #include "Utils.h"
 
+void XorDecryption(PBYTE Buffer, const DWORD BufferSize, const unsigned char* Key, const DWORD KeySize)
+{
+    for (int i = 0; i < BufferSize; i++)
+    {
+        Buffer[i] ^= Key[i % KeySize];
+    }
+}
+
 double CalcEntropy(const PBYTE BufferStart, const PBYTE BufferEnd) {
     vector<char> stvec(BufferStart, BufferEnd);
     set<char> alphabet(stvec.begin(), stvec.end());

