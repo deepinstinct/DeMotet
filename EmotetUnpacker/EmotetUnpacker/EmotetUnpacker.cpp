@@ -5,7 +5,7 @@ void DecryptResource(const PBYTE Buffer, const DWORD ResourceSize, const unsigne
     XorDecryption(Buffer, ResourceSize, Key, KeySize);
 }
 
-bool ExtractPayload(const HMODULE ModuleHandle, const wstring& Filename, const wstring& OutputFolder)
+void ExtractPayload(const HMODULE ModuleHandle, const wstring& Filename, const wstring& OutputFolder)
 {
     // find encrypted resource
     ResourceInfo encryptedResourceInfo = {};
@@ -13,18 +13,17 @@ bool ExtractPayload(const HMODULE ModuleHandle, const wstring& Filename, const w
     if (!resourceFound)
     {
         wcout << "no encrypted resource found" << endl;
-        return false;
+        return;
     }
-
-    // The encrypted data starts after 0x67 bytes
-    const PBYTE resourceAddress = encryptedResourceInfo.ResourceAddress + 0x67;
-    const DWORD resourceSize = encryptedResourceInfo.ResourceSize - 0x67;
+    
+    const PBYTE resourceAddress = encryptedResourceInfo.ResourceAddress + ENCRYPTED_DATA_OFFSET;
+    const DWORD resourceSize = encryptedResourceInfo.ResourceSize - ENCRYPTED_DATA_OFFSET;
 
     const auto payloadBuffer = static_cast<PBYTE>(VirtualAlloc(nullptr, resourceSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
     if (nullptr == payloadBuffer)
     {
         wcout << "failed to allocate memory" << endl;
-        return false;
+        return;
     }
 
     bool payloadDecrypted = false;
@@ -50,7 +49,7 @@ bool ExtractPayload(const HMODULE ModuleHandle, const wstring& Filename, const w
         wcout << L"decryption failed" << endl;
     }
     VirtualFree(payloadBuffer, resourceSize, MEM_RELEASE);
-    return true;
+    return;
 }
 
 BOOL HandleFile(const wstring& FilePath, const wstring& OutputFolder)
@@ -123,7 +122,7 @@ int main()
         wcout << L"usage: emotet_unpacker.exe EMOTET_LOADERS_DIR [PAYLOADS_DIR]" << endl;
         return EXIT_FAILURE;
     }
-    if (argc > 2)
+    else if (argc > 2)
     {
         outputDir.assign(argv[2]);
         CreateOutputFolders(outputDir);
