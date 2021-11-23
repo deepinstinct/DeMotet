@@ -1,8 +1,8 @@
 #include "EmotetUnpacker.h"
 
-void DecryptResource(PBYTE Buffer, const DWORD ResourceSize, const unsigned char* Key, DWORD keySize)
+void DecryptResource(const PBYTE Buffer, const DWORD ResourceSize, const unsigned char* Key, const DWORD KeySize)
 {
-    XorDecryption(Buffer, ResourceSize, Key, keySize);
+    XorDecryption(Buffer, ResourceSize, Key, KeySize);
 }
 
 bool ExtractPayload(const HMODULE ModuleHandle, const wstring& Filename, const wstring& OutputFolder)
@@ -28,10 +28,8 @@ bool ExtractPayload(const HMODULE ModuleHandle, const wstring& Filename, const w
     }
 
     bool payloadDecrypted = false;
-    for (const auto& item : g_XorKeys)
+    for (const auto& [key, keySize] : g_XorKeys)
     {
-        const unsigned char* key = item.first;
-        DWORD keySize = item.second;
         memcpy_s(payloadBuffer, resourceSize, resourceAddress, resourceSize);
         DecryptResource(payloadBuffer, resourceSize, key, keySize);
         const WORD dosMagic = *reinterpret_cast<PWORD>(payloadBuffer);
