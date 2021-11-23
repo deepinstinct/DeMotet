@@ -1,9 +1,8 @@
 #include "EmotetUnpacker.h"
 
-void DecryptResource(PBYTE Buffer, const DWORD ResourceSize)
+void DecryptResource(PBYTE Buffer, const DWORD ResourceSize, const unsigned char* Key, DWORD keySize)
 {
-    constexpr unsigned char key[16] = { 0x75, 0xf5, 0x83, 0x62, 0x8d, 0xc2, 0x93, 0xd9, 0x8e, 0x3b, 0x2d, 0xd0, 0x2f, 0xf4, 0xe4, 0x8d };
-    XorDecryption(Buffer, ResourceSize, key, sizeof(key));
+    XorDecryption(Buffer, ResourceSize, Key, keySize);
 }
 
 bool ExtractPayload(const HMODULE ModuleHandle, const wstring& Filename, const wstring& OutputFolder)
@@ -28,10 +27,22 @@ bool ExtractPayload(const HMODULE ModuleHandle, const wstring& Filename, const w
         return false;
     }
 
-    memcpy_s(payloadBuffer, resourceSize, resourceAddress, resourceSize);
-    DecryptResource(payloadBuffer, resourceSize);
-    const WORD dosMagic = *reinterpret_cast<PWORD>(payloadBuffer);
-    if (IMAGE_DOS_SIGNATURE == dosMagic)
+    bool payloadDecrypted = false;
+    for (const auto& item : g_XorKeys)
+    {
+        const unsigned char* key = item.first;
+        DWORD keySize = item.second;
+        memcpy_s(payloadBuffer, resourceSize, resourceAddress, resourceSize);
+        DecryptResource(payloadBuffer, resourceSize, key, keySize);
+        const WORD dosMagic = *reinterpret_cast<PWORD>(payloadBuffer);
+        if (IMAGE_DOS_SIGNATURE == dosMagic)
+        {
+            payloadDecrypted = true;
+            break;
+        }
+    }
+
+    if (payloadDecrypted)
     {
         wcout << L"success" << endl;
         WritePayloadToDisk(Filename, OutputFolder, payloadBuffer, resourceSize);
