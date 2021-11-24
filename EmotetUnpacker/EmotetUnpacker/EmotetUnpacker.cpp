@@ -49,7 +49,6 @@ void ExtractPayload(const HMODULE ModuleHandle, const wstring& Filename, const w
         wcout << L"decryption failed" << endl;
     }
     VirtualFree(payloadBuffer, resourceSize, MEM_RELEASE);
-    return;
 }
 
 BOOL HandleFile(const wstring& FilePath, const wstring& OutputFolder)

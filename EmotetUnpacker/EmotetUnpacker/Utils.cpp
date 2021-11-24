@@ -52,7 +52,7 @@ BOOL CALLBACK EnumResNameProc(const HMODULE ModuleHandle, const LPWSTR Type, con
 
     const auto resourceAddress = static_cast<PBYTE>(LockResource(globalHandle));
     if (nullptr == resourceAddress)
-        return TRUE;
+        return true;
 
     const PBYTE resourceEnd = resourceAddress + resourceSize;
 
