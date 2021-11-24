@@ -3,12 +3,14 @@
 #include <string>
 #include <iostream>
 #include <map>
+#include <filesystem>
 #include "Utils.h"
 
 using std::wstring;
 using std::wcout;
 using std::endl;
 using std::map;
+using std::filesystem::recursive_directory_iterator;
 
 // The encrypted data starts after 0x67 bytes
 constexpr unsigned int ENCRYPTED_DATA_OFFSET = 0x67;

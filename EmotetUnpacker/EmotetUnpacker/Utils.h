@@ -4,7 +4,6 @@
 #include <string>
 #include <iostream>
 #include <vector>
-#include <cmath>
 #include <set>
 
 using std::wstring;
@@ -25,7 +24,7 @@ const wstring PAYLOADS_FOLDER_NAME(L"\\payloads\\");
 const wstring PAYLOAD_SUFFIX(L"_payload.bin");
 constexpr double ENTROPY_THRESHOLD = 7.0;
 
-void XorDecryption(PBYTE Buffer, const DWORD BufferSize, const unsigned char* Key, const DWORD KeySize);
-bool FindEncryptedResource(const HMODULE ModuleHandle, ResourceInfo* ResourceInfo);
-bool WritePayloadToDisk(const wstring& Filename, const wstring& OutputFolder, const PBYTE PayloadBuffer, const DWORD PayloadSize);
+void XorDecryption(PBYTE Buffer, DWORD BufferSize, const unsigned char* Key, DWORD KeySize);
+bool FindEncryptedResource(HMODULE ModuleHandle, ResourceInfo* ResourceInfo);
+bool WritePayloadToDisk(const wstring& Filename, const wstring& OutputFolder, PBYTE PayloadBuffer, DWORD PayloadSize);
 void CreateOutputFolders(const wstring& OutputDir);

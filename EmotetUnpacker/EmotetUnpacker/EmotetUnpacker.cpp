@@ -75,53 +75,23 @@ BOOL HandleFile(const wstring& FilePath, const wstring& OutputFolder)
 
 void IterateFolder(const wstring& FolderPath, const wstring& OutputFolder)
 {
-    WIN32_FIND_DATA ffd;
-    wstring nextFile = FolderPath;
-    nextFile.append(L"\\*");
-    const HANDLE findFileHandle = FindFirstFileW(nextFile.c_str(), &ffd);
-    if (INVALID_HANDLE_VALUE != findFileHandle)
+    for (auto& directoryEntry : recursive_directory_iterator(FolderPath))
     {
-        do
-        {
-            wstring fileName = ffd.cFileName;
-            if (fileName.compare(L".") && fileName.compare(L".."))
-            {
-                nextFile.assign(FolderPath);
-                nextFile.append(L"\\");
-                nextFile.append(fileName);
-                if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-                {
-                    IterateFolder(nextFile, OutputFolder);
-                }
-                else
-                {
-                    HandleFile(nextFile, OutputFolder);
-                }
-            }
-        } while (FindNextFileW(findFileHandle, &ffd) != 0);
-        FindClose(findFileHandle);
+        if (directoryEntry.is_regular_file())
+            HandleFile(directoryEntry.path(), OutputFolder);
     }
 }
 
-int main()
+int wmain(int argc, wchar_t* argv[], wchar_t* envp[])
 {
-    // get command line as wide string
-    const LPWSTR commandLine = GetCommandLineW();
-    if (nullptr == commandLine)
-        return EXIT_FAILURE;
-    int argc = 0;
-    const LPWSTR* argv = CommandLineToArgvW(commandLine, &argc);
-    if (nullptr == argv)
-        return EXIT_FAILURE;
-
     // get command line values
     wstring outputDir;
-    if (argc < 2)
+    if (1 == argc)
     {
         wcout << L"usage: emotet_unpacker.exe EMOTET_LOADERS_DIR [PAYLOADS_DIR]" << endl;
         return EXIT_FAILURE;
     }
-    else if (argc > 2)
+    if (3 == argc)
     {
         outputDir.assign(argv[2]);
         CreateOutputFolders(outputDir);
