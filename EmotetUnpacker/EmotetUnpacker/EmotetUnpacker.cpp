@@ -1,8 +1,8 @@
 #include "EmotetUnpacker.h"
 
-void DecryptResource(const PBYTE Buffer, const DWORD ResourceSize, const unsigned char* Key, const DWORD KeySize)
+void DecryptResource(const PBYTE Buffer, const DWORD ResourceSize, const vector<BYTE>& Key)
 {
-    XorDecryption(Buffer, ResourceSize, Key, KeySize);
+    XorDecryption(Buffer, ResourceSize, Key.data(), Key.size());
 }
 
 void ExtractPayload(const HMODULE ModuleHandle, const wstring& Filename, const wstring& OutputFolder)
@@ -25,30 +25,35 @@ void ExtractPayload(const HMODULE ModuleHandle, const wstring& Filename, const w
         wcout << "failed to allocate memory" << endl;
         return;
     }
+    memcpy_s(payloadBuffer, resourceSize, resourceAddress, resourceSize);
 
-    bool payloadDecrypted = false;
-    for (const auto& [key, keySize] : g_XorKeys)
+    // Check the first 4 bytes of the encrypted resource to determine the right key
+    switch (*reinterpret_cast<PDWORD>(resourceAddress))
     {
-        memcpy_s(payloadBuffer, resourceSize, resourceAddress, resourceSize);
-        DecryptResource(payloadBuffer, resourceSize, key, keySize);
-        const WORD dosMagic = *reinterpret_cast<PWORD>(payloadBuffer);
-        if (IMAGE_DOS_SIGNATURE == dosMagic)
-        {
-            payloadDecrypted = true;
-            break;
-        }
-    }
+    case ENCRYPTED_MAGIC1:
+        DecryptResource(payloadBuffer, resourceSize, g_XorKey1);
+        break;
+    case ENCRYPTED_MAGIC2:
+        DecryptResource(payloadBuffer, resourceSize, g_XorKey2);
+        break;
+    case ENCRYPTED_MAGIC3:
+        DecryptResource(payloadBuffer, resourceSize, g_XorKey3);
+        break;
+    case ENCRYPTED_MAGIC4:
+        DecryptResource(payloadBuffer, resourceSize, g_XorKey4);
+        break;
+    case ENCRYPTED_MAGIC5:
+        DecryptResource(payloadBuffer, resourceSize, g_XorKey5);
+        break;
 
-    if (payloadDecrypted)
-    {
-        wcout << L"success" << endl;
-        WritePayloadToDisk(Filename, OutputFolder, payloadBuffer, resourceSize);
+    // If the resource begins with bytes other than that, then the sample uses an unknown key
+    default:
+        wcout << L"unknown variant" << endl;
+        return;
     }
-    else
-    {
-        wcout << L"decryption failed" << endl;
-    }
+    WritePayloadToDisk(Filename, OutputFolder, payloadBuffer, resourceSize);
     VirtualFree(payloadBuffer, resourceSize, MEM_RELEASE);
+    wcout << L"success" << endl;
 }
 
 BOOL HandleFile(const wstring& FilePath, const wstring& OutputFolder)
