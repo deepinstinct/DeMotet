@@ -45,7 +45,15 @@ void ExtractPayload(const HMODULE ModuleHandle, const wstring& Filename, const w
     case ENCRYPTED_MAGIC5:
         DecryptResource(payloadBuffer, resourceSize, g_XorKey5);
         break;
-
+    case ENCRYPTED_MAGIC6:
+        DecryptResource(payloadBuffer, resourceSize, g_XorKey6);
+        break;
+    case ENCRYPTED_MAGIC7:
+        DecryptResource(payloadBuffer, resourceSize, g_XorKey7);
+        break;
+    case ENCRYPTED_MAGIC8:
+        DecryptResource(payloadBuffer, resourceSize, g_XorKey8);
+        break;
     // If the resource begins with bytes other than that, then the sample uses an unknown key
     default:
         wcout << L"unknown variant" << endl;
