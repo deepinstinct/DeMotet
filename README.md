@@ -4,6 +4,7 @@ The first tool is a static unpacker for the variants of the Emotet loader listed
 The Python scripts reveal the hidden strings and API calls the payload uses. The first one is a standalone script that can be used to extract this information from a large number of payloads. The second one is an IDA plugin. It adds this information as comments in the code.<br /><br />
 ![](images/IDA_plugin.png)
 ## References
+- https://www.deepinstinct.com/blog/the-re-emergence-of-emotet
 - https://cert.grnet.gr/en/blog/reverse-engineering-emotet/
 - https://medium.com/threat-intel/emotet-dangerous-malware-keeps-on-evolving-ac84aadbb8de
 - https://github.com/mauronz/binja-emotet
