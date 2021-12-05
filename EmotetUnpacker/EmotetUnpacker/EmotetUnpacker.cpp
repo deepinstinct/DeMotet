@@ -35,6 +35,18 @@ void HandleFile(const wstring& FilePath, const wstring& OutputFolder)
     delete pe;
     if (payloadDecrypted)
     {
+        // verify that the decrypted data is a valid PE file
+        try
+        {
+            PeFile decryptedPe(encryptedDataVector);
+        }
+        catch (exception& ex)
+        {
+            wcout << "payload is an invalid PE. " << ex.what() << endl;
+            return;
+        }
+
+        // if the path for the payload is invalid, an exception will be thrown
         try
         {
             WritePayloadToDisk(baseName, OutputFolder, encryptedDataVector);
@@ -99,6 +111,7 @@ int wmain(int argc, wchar_t* argv[], wchar_t* envp[])
 
     // each variant stores the encrypted data in a different place and uses a different decryption algorithms
 	// the vector contains pairs of methods to locate and decrypt the data
+    g_PairVector.emplace_back(new DataSectionExtraction, new DataSectionDecryption);
     g_PairVector.emplace_back(new ResourceExtraction, new ResourceDecryption);
     IterateFolder(loadersDir, outputFolder);
 

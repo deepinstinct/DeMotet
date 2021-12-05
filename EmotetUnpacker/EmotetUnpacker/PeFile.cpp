@@ -18,6 +18,56 @@ PeFile::PeFile(const vector<uint8_t>& FileData)
     ValidatePeFormat();
 }
 
+bool PeFile::GetResource(const LPCWSTR Type, const LPCWSTR Name, vector<uint8_t>& ResourceVector) const
+{
+    uint8_t* resourceSection = GetDataDirRawAddress(IMAGE_DIRECTORY_ENTRY_RESOURCE);
+    const uint32_t resourceSize = GetDataDirSize(IMAGE_DIRECTORY_ENTRY_RESOURCE);
+
+    // if the resource dir doesn't exist there is nothing to search for
+    if (nullptr == resourceSection || 0 == resourceSize)
+        return false;
+
+    const auto resourceDataEntry = FindResourceDataEntry(reinterpret_cast<PIMAGE_RESOURCE_DIRECTORY>(resourceSection), resourceSize, resourceSection, RESOURCE_LEVEL_TYPE, Type, Name);
+    if (nullptr == resourceDataEntry)
+        return false;
+
+    // check that the values in the resource entry are valid
+    uint8_t* resourceDataStart = VirtualAddressToRawAddress(resourceDataEntry->OffsetToData);
+    uint8_t* resourceDataEnd = resourceDataStart + resourceDataEntry->Size;
+    if (nullptr == resourceDataStart || resourceDataEnd > m_DataEnd)
+        return false;
+
+    // copy the resource data into the vector
+    ResourceVector.insert(ResourceVector.begin(), resourceDataStart, resourceDataEnd);
+    return true;
+}
+
+uint32_t PeFile::SearchForData(const vector<uint8_t>& Data)
+{
+	const auto it = std::search(m_Data.begin(), m_Data.end(), Data.begin(), Data.end());
+    if (m_Data.end() == it)
+        return 0;
+    return it - m_Data.begin();
+}
+
+bool PeFile::ReadInt32(const uint32_t Index, uint32_t* ValuePointer) const
+{
+    if (Index >= m_FileSize)
+        return false;
+    if (nullptr == ValuePointer)
+        return false;
+    *ValuePointer = *reinterpret_cast<uint32_t*>(m_DataStart + Index);
+    return true;
+}
+
+bool PeFile::ReadBytes(const uint32_t Index, const uint32_t Size, vector<uint8_t>& Data)
+{
+    if (Index + Size >= m_FileSize)
+        return false;
+    Data.insert(Data.begin(), m_Data.begin() + Index, m_Data.begin() + Index + Size);
+    return true;
+}
+
 void PeFile::DosHeaderValid()
 {
     m_DosHeader = reinterpret_cast<PIMAGE_DOS_HEADER>(m_DataStart);
@@ -279,29 +329,4 @@ PIMAGE_RESOURCE_DATA_ENTRY PeFile::FindResourceDataEntry(const PIMAGE_RESOURCE_D
         dirEntry++;
     }
     return nullptr;
-}
-
-
-bool PeFile::GetResource(const LPCWSTR Type, const LPCWSTR Name, vector<uint8_t>& ResourceVector) const
-{
-    uint8_t* resourceSection = GetDataDirRawAddress(IMAGE_DIRECTORY_ENTRY_RESOURCE);
-    const uint32_t resourceSize = GetDataDirSize(IMAGE_DIRECTORY_ENTRY_RESOURCE);
-
-    // if the resource dir doesn't exist there is nothing to search for
-    if (nullptr == resourceSection || 0 == resourceSize)
-        return false;
-
-    const auto resourceDataEntry = FindResourceDataEntry(reinterpret_cast<PIMAGE_RESOURCE_DIRECTORY>(resourceSection), resourceSize, resourceSection, RESOURCE_LEVEL_TYPE, Type, Name);
-    if (nullptr == resourceDataEntry)
-        return false;
-
-    // check that the values in the resource entry are valid
-    uint8_t* resourceDataStart = VirtualAddressToRawAddress(resourceDataEntry->OffsetToData);
-    uint8_t* resourceDataEnd = resourceDataStart + resourceDataEntry->Size;
-    if (nullptr == resourceDataStart || resourceDataEnd > m_DataEnd)
-        return false;
-
-    // copy the resource data into the vector
-    ResourceVector.insert(ResourceVector.begin(), resourceDataStart, resourceDataEnd);
-    return true;
 }

@@ -20,6 +20,9 @@ public:
 	explicit PeFile(const wstring& Path);
 	explicit PeFile(const vector<uint8_t>& FileData);
 	bool GetResource(LPCWSTR Type, LPCWSTR Name, vector<uint8_t>& ResourceVector) const;
+	uint32_t SearchForData(const vector<uint8_t>& Data);
+	bool ReadInt32(uint32_t Index, uint32_t* ValuePointer) const;
+	bool ReadBytes(uint32_t Index, uint32_t Size, vector<uint8_t>& Data);
 
 private:
 	wstring m_Path;

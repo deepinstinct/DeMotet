@@ -1,6 +1,7 @@
 #pragma once
 #include "stdafx.h"
 #include "PeFile.h"
+#include "Decryption.h"
 
 class Extraction
 {
@@ -15,5 +16,12 @@ class ResourceExtraction : public Extraction
 {
 public:
 	ResourceExtraction() = default;
+	bool Extract(PeFile* Pe, vector<uint8_t>& EncryptedDataVector) override;
+};
+
+class DataSectionExtraction : public Extraction
+{
+public:
+	DataSectionExtraction() = default;
 	bool Extract(PeFile* Pe, vector<uint8_t>& EncryptedDataVector) override;
 };
