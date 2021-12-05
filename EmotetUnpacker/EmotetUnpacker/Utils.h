@@ -1,30 +1,11 @@
 #pragma once
-#include <Windows.h>
-#include <shlwapi.h>
-#include <string>
-#include <iostream>
-#include <vector>
-#include <set>
-
-using std::wstring;
-using std::wcout;
-using std::endl;
-using std::vector;
-using std::set;
-
-struct ResourceInfo {
-    LPWSTR ResourceType;
-    LPWSTR ResourceName;
-    DWORD  ResourceSize;
-    PBYTE  ResourceAddress;
-    double ResourceEntropy;
-};
+#include "stdafx.h"
 
 const wstring PAYLOADS_FOLDER_NAME(L"\\payloads\\");
 const wstring PAYLOAD_SUFFIX(L"_payload.bin");
-constexpr double ENTROPY_THRESHOLD = 7.0;
 
-void XorDecryption(PBYTE Buffer, DWORD BufferSize, const unsigned char* Key, DWORD KeySize);
-bool FindEncryptedResource(HMODULE ModuleHandle, ResourceInfo* ResourceInfo);
-bool WritePayloadToDisk(const wstring& Filename, const wstring& OutputFolder, PBYTE PayloadBuffer, DWORD PayloadSize);
-void CreateOutputFolders(const wstring& OutputDir);
+double CalcEntropy(const uint8_t* BufferStart, const uint8_t* BufferEnd);
+void ReadFromFile(const wstring& FilePath, vector<uint8_t>& DataVector);
+void WriteToFile(const wstring& FilePath, vector<uint8_t>& DataVector);
+void WritePayloadToDisk(const wstring& Filename, const wstring& OutputFolder, vector<uint8_t>& PayloadVector);
+void CreateOutputFolder(const wstring& OutputFolder);

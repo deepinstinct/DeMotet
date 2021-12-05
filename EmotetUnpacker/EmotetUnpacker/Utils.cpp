@@ -1,14 +1,6 @@
 #include "Utils.h"
 
-void XorDecryption(PBYTE Buffer, const DWORD BufferSize, const unsigned char* Key, const DWORD KeySize)
-{
-    for (int i = 0; i < BufferSize; i++)
-    {
-        Buffer[i] ^= Key[i % KeySize];
-    }
-}
-
-double CalcEntropy(const PBYTE BufferStart, const PBYTE BufferEnd) {
+double CalcEntropy(const uint8_t* BufferStart, const uint8_t* BufferEnd) {
     vector<char> stvec(BufferStart, BufferEnd);
     set<char> alphabet(stvec.begin(), stvec.end());
     vector<double> frequencies;
@@ -30,90 +22,49 @@ double CalcEntropy(const PBYTE BufferStart, const PBYTE BufferEnd) {
     return ent;
 }
 
-BOOL ResourceTypeNotRelevant(const LPWSTR Type)
+void ReadFromFile(const wstring& FilePath, vector<uint8_t>& DataVector)
 {
-    return (Type != RT_BITMAP);
-}
-
-BOOL CALLBACK EnumResNameProc(const HMODULE ModuleHandle, const LPWSTR Type, const LPWSTR Name, ResourceInfo* ResourceInfo)
-{
-    // Skip resources to improve performance
-    if (ResourceTypeNotRelevant(Type))
-        return true;
-
-    const HRSRC resourceHandle = FindResourceW(ModuleHandle, Name, Type);
-    if (nullptr == resourceHandle)
-        return true;
-
-    const DWORD resourceSize = SizeofResource(ModuleHandle, resourceHandle);
-    const HGLOBAL globalHandle = LoadResource(ModuleHandle, resourceHandle);
-    if (nullptr == globalHandle)
-        return true;
-
-    const auto resourceAddress = static_cast<PBYTE>(LockResource(globalHandle));
-    if (nullptr == resourceAddress)
-        return true;
-
-    const PBYTE resourceEnd = resourceAddress + resourceSize;
-
-    // the resource with the highest entropy usually has the encrypted payload
-    const double resourceEntropy = CalcEntropy(resourceAddress, resourceEnd);
-    if (resourceEntropy > ResourceInfo->ResourceEntropy)
+    ifstream fileStream(FilePath, std::ios::binary);
+    if (fileStream.bad())
     {
-        ResourceInfo->ResourceType = Type;
-        ResourceInfo->ResourceName = Name;
-        ResourceInfo->ResourceSize = resourceSize;
-        ResourceInfo->ResourceAddress = resourceAddress;
-        ResourceInfo->ResourceEntropy = resourceEntropy;
+        string errorMsg = "Error reading from ";
+        errorMsg.append(FilePath.begin(), FilePath.end());
+        throw runtime_error(errorMsg);
     }
-    return true;
+    DataVector.assign(std::istreambuf_iterator(fileStream), {});
 }
 
-BOOL CALLBACK EnumResTypeProc(const HMODULE ModuleHandle, const LPWSTR Type, ResourceInfo* ResourceInfo)
+void WriteToFile(const wstring& FilePath, vector<uint8_t>& DataVector)
 {
-    EnumResourceNamesW(ModuleHandle, Type, reinterpret_cast<ENUMRESNAMEPROCW>(EnumResNameProc), reinterpret_cast<LONG_PTR>(ResourceInfo));
-    return true;
-}
-
-bool FindEncryptedResource(const HMODULE ModuleHandle, ResourceInfo* ResourceInfo)
-{
-    EnumResourceTypesW(ModuleHandle, reinterpret_cast<ENUMRESTYPEPROCW>(EnumResTypeProc), reinterpret_cast<LONG_PTR>(ResourceInfo));
-
-    // check if a resource with entropy high enough to contain encrypted data was found
-    return ResourceInfo->ResourceEntropy > ENTROPY_THRESHOLD;
-}
-
-bool WriteToFile(const wstring& FilePath, const PBYTE Data, const DWORD DataSize)
-{
-	const HANDLE fileHandle = CreateFileW(FilePath.c_str(), GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-    if (INVALID_HANDLE_VALUE == fileHandle)
+    auto fileStream = ofstream(FilePath, std::ios::binary);
+    if (fileStream.bad())
     {
-        return false;
+        string errorMsg = "Error writing to ";
+        errorMsg.append(FilePath.begin(), FilePath.end());
+        throw runtime_error(errorMsg);
     }
-    DWORD bytesWritten;
-	const bool writeSuccess = WriteFile(fileHandle, Data, DataSize, &bytesWritten, nullptr);
-    CloseHandle(fileHandle);
-    return writeSuccess;
+    fileStream.write(reinterpret_cast<char*>(DataVector.data()), DataVector.size());
+    fileStream.close();
 }
 
-bool WritePayloadToDisk(const wstring& Filename, const wstring& OutputFolder, const PBYTE PayloadBuffer, const DWORD PayloadSize)
+void WritePayloadToDisk(const wstring& Filename, const wstring& OutputFolder, vector<uint8_t>& PayloadVector)
 {
     // build the path for the payload
     wstring payloadPath(OutputFolder);
     payloadPath.append(PAYLOADS_FOLDER_NAME);
     payloadPath.append(Filename);
     payloadPath.append(PAYLOAD_SUFFIX);
-    return WriteToFile(payloadPath, PayloadBuffer, PayloadSize);
+    WriteToFile(payloadPath, PayloadVector);
 }
 
-void CreateOutputFolders(const wstring& OutputDir)
+void CreateOutputFolder(const wstring& OutputFolder)
 {
-    if (!PathFileExistsW(OutputDir.c_str()))
+    if (!is_directory(OutputFolder))
     {
-        CreateDirectoryW(OutputDir.c_str(), nullptr);
+        create_directory(OutputFolder);
     }
 
-    wstring payloadsFolder(OutputDir);
+    wstring payloadsFolder(OutputFolder);
     payloadsFolder.append(PAYLOADS_FOLDER_NAME);
-    CreateDirectoryW(payloadsFolder.c_str(), nullptr);
+    create_directory(payloadsFolder);
 }
